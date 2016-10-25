@@ -2,13 +2,15 @@
 import {DrawArea} from "./DrawArea";
 
 export abstract class Layer {
+    protected canvasArea :DrawArea;
     protected targetArea :DrawArea;
 
     constructor (public name :string) {
 
     }
 
-    initialise(targetArea :DrawArea) {
+    initialise(canvasArea :DrawArea, targetArea :DrawArea) {
+        this.canvasArea = canvasArea;
         this.targetArea = targetArea;
     }
 
@@ -17,21 +19,49 @@ export abstract class Layer {
     abstract buildWidget() :JQuery;
 }
 
-export class TextLayer extends Layer {
+// Fill the whole canvas area with the given style
+export class OverlayLayer extends Layer {
+    
+    constructor (public name :string, public fillStyle :string){
+        super(name);
+    }
+
+    initialise(canvasArea :DrawArea, targetArea :DrawArea) {
+        super.initialise(canvasArea, targetArea);
+    }
+
+    update() {
+
+    }
+
+    render(context :CanvasRenderingContext2D) {
+        context.fillStyle = this.fillStyle;
+        this.targetArea.fillRect(context);
+    }
+
+    buildWidget() :JQuery {
+        return null;
+    }
+}
+
+export class MarqueeLayer extends Layer {
     private x :number;
+    private textArea :JQuery;
 
     constructor (public name :string, public text :string){
         super(name);
     }
 
-    initialise(targetArea :DrawArea){    
-        super.initialise(targetArea);    
-        this.x = this.targetArea.width;
+    initialise(canvasArea :DrawArea, targetArea :DrawArea){    
+        super.initialise(canvasArea, targetArea);    
+        this.x = this.canvasArea.width;
     }
 
     update() {
-        if (this.x < this.targetArea.originX - 600) {
-            this.x = this.targetArea.width;
+        this.text = this.textArea.val();
+
+        if (this.x < this.canvasArea.originX - 600) {
+            this.x = this.canvasArea.width;
         }
         else {
             this.x -= 2;
@@ -39,12 +69,14 @@ export class TextLayer extends Layer {
     }
 
     render(context :CanvasRenderingContext2D){
-        context.strokeText(this.text, this.x, 20);
+        context.font = "20px sans-serif";
+        context.fillStyle = "#111";
+        context.fillText(this.text, this.x, 20);
     }
 
     buildWidget() :JQuery{
-        let textBox = $.parseHTML("<textbox></textbox>");
-
-        return $(textBox);
+        this.textArea = $($.parseHTML("<textarea>test</textarea>"));
+        
+        return this.textArea;
     }
 }

@@ -1,6 +1,6 @@
 /// <reference path="../../typings/index.d.ts" />
 import {DrawArea} from "./drawarea"
-import {Layer, TextLayer} from "./layer";
+import {Layer, OverlayLayer, MarqueeLayer} from "./layer";
 
 export class MixingDeck {
     private canvas :HTMLCanvasElement;
@@ -9,22 +9,56 @@ export class MixingDeck {
     private layers :Layer[];
 
     constructor(public root :JQuery) {
-        this.canvas = root.children(".card-canvas").first()[0] as HTMLCanvasElement;
+        this.canvas = root.find(".card-canvas").first()[0] as HTMLCanvasElement;
         this.context2d = this.canvas.getContext("2d");
-        this.widgetRoot = root.children("form.widgetRoot").first();
+        this.widgetRoot = root.find("form.card-widgets-root").first();
+
+        if (this.widgetRoot.length == 0) {
+            console.warn("Couldn't find root element for widgets");
+        }
         
         this.layers = [
-            new TextLayer(
+            new OverlayLayer(
+                "background",
+                "#fdd700"
+            ),
+            new MarqueeLayer(
                 "marquee",
-                "blade runner id card generator - for all your blade runner id card generating needs"
+                "test"
             ),
         ];
     }
 
     initialise() {
+        let canvasArea = new DrawArea(0, 0, this.canvas.width, this.canvas.height);
+
+        let cardOriginX :number, cardOriginY :number;
+        let cardHeight :number, cardWidth :number;
+        let cardRatio = 1.3; // height/width
+        if (cardRatio >= 1) { // height is longest side; align horizontally
+            cardHeight = this.canvas.height;
+            cardWidth = cardHeight / cardRatio;
+            cardOriginY = 0;
+            cardOriginX = (this.canvas.width - cardWidth) / 2;
+        }
+        else { // width is longest side; align vertically
+            cardWidth = this.canvas.width;
+            cardHeight = cardWidth / cardRatio; 
+            cardOriginX = 0;
+            cardOriginY = (this.canvas.height - cardHeight) / 2;
+        }
+
+        // TODO change this area depending on configured card size, if responsive then just use whole canvas
+        let cardArea = new DrawArea(cardOriginX, cardOriginY, cardWidth, cardHeight);
+
         for (let layer of this.layers) {
-            layer.initialise(new DrawArea(0, 0, this.canvas.width, this.canvas.height))
-            this.widgetRoot.append(layer.buildWidget());
+            layer.initialise(canvasArea, cardArea);
+
+            let widget = layer.buildWidget();
+            if (widget) {
+                this.widgetRoot.append(widget);
+                console.debug("Added widget for layer <%s>", layer.name);
+            }
         }
     }
 

@@ -1,0 +1,32 @@
+body {
+    font-family: sans-serif;
+}
+
+.full {
+    width: 80%;
+    margin: 0 auto;
+}
+
+.mixing-deck {
+    display: flex;
+    flex-flow: row;
+    flex-wrap: nowrap;
+    background-color: #ccc;
+
+    .card-canvas {
+        flex-grow: 2;
+    }
+
+    .card-widgets {
+        flex-grow: 1;
+
+        form.card-widgets-root {
+            display: flex;
+            flex-flow: column;
+            flex-wrap: nowrap;
+            flex-basis: content;
+            min-height: 1em;
+            margin: 1em;
+        }
+    }
+}

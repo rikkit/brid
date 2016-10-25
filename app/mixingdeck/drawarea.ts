@@ -7,4 +7,8 @@ export class DrawArea {
     ) {
 
     }
+
+    fillRect(context :CanvasRenderingContext2D) {
+        context.fillRect(this.originX, this.originY, this.width, this.height);
+    }
 }
