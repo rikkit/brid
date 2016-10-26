@@ -1,5 +1,5 @@
 /// <reference path="../../typings/index.d.ts" />
-import {DrawArea} from "./DrawArea";
+import {DrawArea} from "./drawarea";
 
 export abstract class Layer {
     protected canvasArea :DrawArea;
