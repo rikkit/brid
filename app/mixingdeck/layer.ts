@@ -15,7 +15,7 @@ export abstract class Layer {
     }
 
     abstract update() :void;
-    abstract render(canvas :CanvasRenderingContext2D) :void;
+    abstract render(canvas :CanvasRenderingContext2D) :DrawArea;
     abstract buildWidget() :JQuery;
 }
 
@@ -34,9 +34,11 @@ export class OverlayLayer extends Layer {
 
     }
 
-    render(context :CanvasRenderingContext2D) {
+    render(context :CanvasRenderingContext2D) :DrawArea{
         context.fillStyle = this.fillStyle;
         this.targetArea.fillRect(context);
+
+        return this.targetArea;
     }
 
     buildWidget() :JQuery {
@@ -68,15 +70,112 @@ export class MarqueeLayer extends Layer {
         }
     }
 
-    render(context :CanvasRenderingContext2D){
-        context.font = "20px sans-serif";
+    render(context :CanvasRenderingContext2D) :DrawArea {
+        context.font = "20px spinner";
         context.fillStyle = "#111";
         context.fillText(this.text, this.x, 20);
+
+        return new DrawArea(
+            this.canvasArea.originX,
+            this.canvasArea.originY,
+            this.canvasArea.width,
+            20
+        );
     }
 
     buildWidget() :JQuery{
-        this.textArea = $($.parseHTML("<textarea>test</textarea>"));
+        this.textArea = $($.parseHTML("<textarea></textarea>"));
+        this.textArea.val(this.text);
         
+        return this.textArea;
+    }
+}
+
+export class HeadlineLayer extends Layer {
+    private textArea :JQuery;
+
+    constructor(public name :string, public text :string) {
+        super(name);
+    }
+
+    initialise(canvasArea :DrawArea, targetArea :DrawArea) {
+        super.initialise(canvasArea, targetArea);
+    }
+
+    update() {
+        this.text = this.textArea.val();
+    }
+
+    private bisectString(text :string) :string[] {
+        if (text.length <= 0) {
+            return [];
+        }
+
+        let regex = /\s+/g;
+        var indexes :number[][] = [];
+
+        var match;
+        while ((match = regex.exec(text)) != null) {
+            let pair = [match.index, match.index+match[0].length];
+            console.debug("headline layer bisect: whitespace at %s", pair);
+            indexes.push(pair);
+        }
+
+        var midpointIndexPair :number[] = null;
+        let midpoint = text.length / 2;
+        for (let indexPair of indexes) {
+            if (midpoint > indexPair[0] && midpoint < indexPair[1]) {
+                midpointIndexPair = indexPair;
+            }
+        }
+
+        if (!midpointIndexPair) {
+            midpointIndexPair = indexes.length > 0
+                ? indexes[indexes.length - 1]
+                : [text.length, text.length];
+        }
+
+        return [
+            text.substr(0, midpointIndexPair[0]),
+            text.substr(midpointIndexPair[1], text.length - 1)
+        ];
+    } 
+
+    render(context :CanvasRenderingContext2D) :DrawArea {
+        let lines = this.bisectString(this.text);
+        if (lines.length == 0) {
+            return;
+        }
+
+        console.debug("headline layer: split %s into %s", this.text, lines)
+        
+        const baselineFontHeight = 20;
+        var currentVerticalOffset :number = 0;
+        for (let line of lines) {            
+            context.font = baselineFontHeight + "px spinner"; // reset context for remeasuring
+
+            // measure the length and scale up the font so each line fits the whole width
+            let lineWidth = context.measureText(line).width;
+            let scaleFactor = this.targetArea.width / lineWidth;
+            let fontHeight = baselineFontHeight * scaleFactor;
+
+            context.font = fontHeight + "px spinner";
+            context.fillStyle = "#eee";
+            context.fillText(line, this.targetArea.originX, currentVerticalOffset + fontHeight, this.targetArea.width);
+            currentVerticalOffset += fontHeight;
+        }
+
+        return new DrawArea(
+            this.targetArea.originX,
+            this.targetArea.originY,
+            this.targetArea.width,
+            currentVerticalOffset);
+    }
+
+    buildWidget() :JQuery {
+        this.textArea = $($.parseHTML("<textarea></textarea>"));
+        this.textArea.val(this.text);
+
         return this.textArea;
     }
 }

@@ -1,5 +1,14 @@
+@font-face {
+    font-family: "spinner";
+    src: url(./spinner.ttf) format("truetype");
+}
+
 body {
     font-family: sans-serif;
+}
+
+h1 {
+    font-family: "spinner";
 }
 
 .full {

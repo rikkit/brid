@@ -1,6 +1,6 @@
 /// <reference path="../../typings/index.d.ts" />
 import {DrawArea} from "./drawarea"
-import {Layer, OverlayLayer, MarqueeLayer} from "./layer";
+import {Layer, OverlayLayer, MarqueeLayer, HeadlineLayer} from "./layer";
 
 export class MixingDeck {
     private canvas :HTMLCanvasElement;
@@ -20,7 +20,11 @@ export class MixingDeck {
         this.layers = [
             new OverlayLayer(
                 "background",
-                "#fdd700"
+                "#222"
+            ),
+            new HeadlineLayer(
+                "headline",
+                "police 995"
             ),
             new MarqueeLayer(
                 "marquee",
