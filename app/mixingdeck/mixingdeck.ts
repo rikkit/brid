@@ -1,12 +1,13 @@
 /// <reference path="../../typings/index.d.ts" />
-import {DrawArea} from "./drawarea"
-import {Layer, OverlayLayer, MarqueeLayer, CrossLayer, HeadlineLayer} from "./layer";
+import {DrawArea, FlowDirection} from "./utils"
+import {Layer, StackLayer, OverlayLayer, MarqueeLayer, CrossLayer, HeadlineLayer} from "./layer";
 
 export class MixingDeck {
     private canvas :HTMLCanvasElement;
     private context2d :CanvasRenderingContext2D;
     private widgetRoot :JQuery;
     private layers :Layer[];
+    private cardArea :DrawArea;
 
     constructor(public root :JQuery) {
         this.canvas = root.find(".card-canvas").first()[0] as HTMLCanvasElement;
@@ -22,9 +23,19 @@ export class MixingDeck {
                 "background",
                 "#222"
             ),
-            new HeadlineLayer(
-                "headline",
-                "police 995"
+            new StackLayer(
+                "stack",
+                FlowDirection.TopDown,
+                [
+                    new HeadlineLayer(
+                        "headline",
+                        "police 995"
+                    ),
+                    new HeadlineLayer(
+                        "headline",
+                        "second headline"
+                    )
+                ]
             ),
             new CrossLayer(
                 "x"
@@ -56,16 +67,11 @@ export class MixingDeck {
         }
 
         // TODO change this area depending on configured card size, if responsive then just use whole canvas
-        let cardArea = new DrawArea(cardOriginX, cardOriginY, cardWidth, cardHeight);
+        this.cardArea = new DrawArea(cardOriginX, cardOriginY, cardWidth, cardHeight);
 
         for (let layer of this.layers) {
-            let widget = layer.buildWidget();
-            if (widget) {
-                this.widgetRoot.append(widget);
-                console.debug("Added widget for layer <%s>", layer.name);
-            }
-
-            layer.initialise(canvasArea, cardArea);
+            layer.addWidget(this.widgetRoot);
+            layer.initialise(canvasArea);
         }
     }
 
@@ -80,7 +86,7 @@ export class MixingDeck {
         this.context2d.globalCompositeOperation = "source-over";
 
         for (let layer of this.layers) {
-            layer.render(this.context2d);
+            layer.render(this.context2d, this.cardArea);
         }
     }
 }

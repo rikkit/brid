@@ -16,3 +16,10 @@ export class DrawArea {
         context.fillRect(this.originX, this.originY, this.width, this.height);
     }
 }
+
+export enum FlowDirection {
+    TopDown,
+    LeftRight,
+    //BottomUp,
+    //RightLeft
+}

@@ -1,22 +1,19 @@
 /// <reference path="../../typings/index.d.ts" />
-import {DrawArea} from "./drawarea";
+import {DrawArea, FlowDirection} from "./utils";
 
 export abstract class Layer {
     protected canvasArea :DrawArea;
-    protected targetArea :DrawArea;
 
     constructor (public name :string) {
-
     }
 
-    initialise(canvasArea :DrawArea, targetArea :DrawArea) {
+    initialise(canvasArea :DrawArea) {
         this.canvasArea = canvasArea;
-        this.targetArea = targetArea;
     }
 
     abstract update() :void;
-    abstract render(canvas :CanvasRenderingContext2D) :DrawArea;
-    abstract buildWidget() :JQuery;
+    abstract render(canvas :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea;
+    abstract addWidget(widgetRoot :JQuery) :void;
 }
 
 // Fill the whole canvas area with the given style
@@ -26,23 +23,18 @@ export class OverlayLayer extends Layer {
         super(name);
     }
 
-    initialise(canvasArea :DrawArea, targetArea :DrawArea) {
-        super.initialise(canvasArea, targetArea);
-    }
-
     update() {
 
     }
 
-    render(context :CanvasRenderingContext2D) :DrawArea{
+    render(context :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea{
         context.fillStyle = this.fillStyle;
-        this.targetArea.fillRect(context);
+        targetArea.fillRect(context);
 
-        return this.targetArea;
+        return targetArea;
     }
 
-    buildWidget() :JQuery {
-        return null;
+    addWidget(widgetRoot :JQuery) :void {
     }
 }
 
@@ -54,8 +46,8 @@ export class MarqueeLayer extends Layer {
         super(name);
     }
 
-    initialise(canvasArea :DrawArea, targetArea :DrawArea){    
-        super.initialise(canvasArea, targetArea);    
+    initialise(canvasArea :DrawArea){    
+        super.initialise(canvasArea);
         this.x = this.canvasArea.width;
     }
 
@@ -83,11 +75,11 @@ export class MarqueeLayer extends Layer {
         );
     }
 
-    buildWidget() :JQuery{
+    addWidget(widgetRoot :JQuery) :void {
         this.textArea = $($.parseHTML('<input type="text"></input>'));
         this.textArea.val(this.text);
-        
-        return this.textArea;
+
+        widgetRoot.append(this.textArea);
     }
 }
 
@@ -96,10 +88,6 @@ export class HeadlineLayer extends Layer {
 
     constructor(public name :string, public text :string) {
         super(name);
-    }
-
-    initialise(canvasArea :DrawArea, targetArea :DrawArea) {
-        super.initialise(canvasArea, targetArea);
     }
 
     update() {
@@ -141,7 +129,7 @@ export class HeadlineLayer extends Layer {
         ];
     } 
 
-    render(context :CanvasRenderingContext2D) :DrawArea {
+    render(context :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {
         let lines = this.bisectString(this.text);
         if (lines.length == 0) {
             return;
@@ -150,33 +138,37 @@ export class HeadlineLayer extends Layer {
         console.debug("headline layer: split %s into %s", this.text, lines)
         
         const baselineFontHeight = 20;
-        var currentVerticalOffset :number = 0;
+        var currentVerticalOffset :number = targetArea.originY;
         for (let line of lines) {            
             context.font = baselineFontHeight + "px spinner"; // reset context for remeasuring
 
             // measure the length and scale up the font so each line fits the whole width
             let lineWidth = context.measureText(line).width;
-            let scaleFactor = this.targetArea.width / lineWidth;
+            if (lineWidth == 0) {
+                break;
+            }
+
+            let scaleFactor = targetArea.width / lineWidth;
             let fontHeight = baselineFontHeight * scaleFactor;
 
             context.font = fontHeight + "px spinner";
             context.fillStyle = "#eee";
-            context.fillText(line, this.targetArea.originX, currentVerticalOffset + fontHeight, this.targetArea.width);
+            context.fillText(line, targetArea.originX, currentVerticalOffset + fontHeight, targetArea.width);
             currentVerticalOffset += fontHeight;
         }
 
         return new DrawArea(
-            this.targetArea.originX,
-            this.targetArea.originY,
-            this.targetArea.width,
+            targetArea.originX,
+            targetArea.originY,
+            targetArea.width,
             currentVerticalOffset);
     }
 
-    buildWidget() :JQuery {
+    addWidget(widgetRoot :JQuery) :void {
         this.textArea = $($.parseHTML('<input type="text"></input>'));
         this.textArea.val(this.text);
 
-        return this.textArea;
+        widgetRoot.append(this.textArea);
     }
 }
 
@@ -188,9 +180,8 @@ export class CrossLayer extends Layer {
         super(name);
     }
 
-    initialise(canvasArea :DrawArea, targetArea :DrawArea) {
-        this.canvasArea = canvasArea;
-        this.targetArea = targetArea;
+    initialise(canvasArea :DrawArea) {
+        super.initialise(canvasArea);
 
         this.colourPicker.spectrum({
             color: "#F74700"
@@ -201,10 +192,10 @@ export class CrossLayer extends Layer {
         this.colour = this.colourPicker.spectrum('get');
     }
 
-    render(canvas :CanvasRenderingContext2D) :DrawArea {
+    render(canvas :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {
         canvas.globalCompositeOperation = "darken";
 
-        let crossArea = this.targetArea; //TODO margin
+        let crossArea = targetArea; //TODO margin
         canvas.beginPath();
         canvas.moveTo(crossArea.originX, crossArea.originY);
         canvas.lineTo(crossArea.limitX, crossArea.limitY);
@@ -213,14 +204,78 @@ export class CrossLayer extends Layer {
         canvas.strokeStyle = this.colour.toHexString();
         canvas.lineWidth = 35;
         canvas.stroke();
-
-        //this.targetArea.fillRect(canvas);
-
-        return this.targetArea;
+        
+        return targetArea;
     }
 
-    buildWidget() :JQuery {
+    addWidget(widgetRoot :JQuery) :void {
         this.colourPicker = $($.parseHTML('<input type="text"></input>'));
-        return this.colourPicker;
+        
+        widgetRoot.append(this.colourPicker);
+    }
+}
+
+export class StackLayer extends Layer {    
+    constructor (public name :string, public orientation :FlowDirection, public children :Layer[]) {
+        super(name);
+    }
+
+    initialise(canvasArea :DrawArea) {
+        super.initialise(canvasArea);
+
+        for (let childLayer of this.children) {
+            childLayer.initialise(canvasArea);
+        }
+    }
+
+    update() :void {
+        for (let childLayer of this.children) {
+            childLayer.update();
+        }
+    }
+
+    private fitDrawArea(whole :DrawArea, subtract :DrawArea) :DrawArea {
+        if (this.orientation == FlowDirection.TopDown) {
+            return new DrawArea(
+                whole.originX,
+                whole.originY + subtract.height,
+                whole.width,
+                whole.height - subtract.height
+            );
+        }
+        else if (this.orientation == FlowDirection.LeftRight) {
+            return new DrawArea(
+                whole.originX + subtract.width,
+                whole.originY,
+                whole.width - subtract.width,
+                whole.height
+            );
+        }
+        else {
+            throw new Error("Unknown flow direction");
+        }
+    }
+
+    render(canvas :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {
+        canvas.globalCompositeOperation = "source-over";
+
+        let renderedArea :DrawArea = null;
+        let newTargetArea = targetArea;
+        for (let layer of this.children) {
+            renderedArea = layer.render(canvas, newTargetArea);
+            if (!renderedArea) {
+                continue;
+            }
+
+            newTargetArea = this.fitDrawArea(newTargetArea, renderedArea);
+        }
+
+        return targetArea;
+    }
+
+    addWidget(widgetRoot :JQuery) :void {
+        for (let childLayer of this.children) {
+            childLayer.addWidget(widgetRoot);
+        }
     }
 }
