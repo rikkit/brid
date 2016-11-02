@@ -1,6 +1,6 @@
 /// <reference path="../../typings/index.d.ts" />
 import {DrawArea, FlowDirection} from "./utils"
-import {Layer, StackLayer, OverlayLayer, MarqueeLayer, CrossLayer, HeadlineLayer} from "./layer";
+import {Layer, StackLayer, OverlayLayer, MarqueeLayer, CrossLayer, HeadlineLayer, NameLayer} from "./layer";
 
 export class MixingDeck {
     private canvas :HTMLCanvasElement;
@@ -31,9 +31,8 @@ export class MixingDeck {
                         "headline",
                         "police 995"
                     ),
-                    new HeadlineLayer(
-                        "headline",
-                        "second headline"
+                    new NameLayer(
+                        "name"
                     )
                 ]
             ),

@@ -157,6 +157,8 @@ export class HeadlineLayer extends Layer {
             currentVerticalOffset += fontHeight;
         }
 
+        currentVerticalOffset += 5; // add a bottom margin        
+
         return new DrawArea(
             targetArea.originX,
             targetArea.originY,
@@ -277,5 +279,40 @@ export class StackLayer extends Layer {
         for (let childLayer of this.children) {
             childLayer.addWidget(widgetRoot);
         }
+    }
+}
+
+export class NameLayer extends Layer {
+    private textArea :JQuery;
+
+    constructor(name :string) {
+        super(name)
+    }
+
+    addWidget(root :JQuery) :void {
+        this.textArea = $($.parseHTML('<input type="text"></input>'));
+        this.textArea.val("R. DECKARD   XV");
+
+        root.append(this.textArea);
+    }
+
+    update() :void {
+    }
+
+    render(context :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {
+        let fontHeight = targetArea.width / 11;
+        let margin = fontHeight / 4;
+        
+        let backgroundArea = new DrawArea(targetArea.originX, targetArea.originY, targetArea.width, fontHeight + (2 * margin));
+        backgroundArea.fillRect(context);
+
+        context.font = fontHeight + 'px "Roboto Slab"';
+        let name = this.textArea.val();
+        let nameMargin = (targetArea.width - context.measureText(name).width) / 2;
+
+        context.fillStyle = "#111";
+        context.fillText(name, targetArea.originX + nameMargin, targetArea.originY + fontHeight + margin);
+
+        return backgroundArea;
     }
 }
