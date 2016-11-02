@@ -1,5 +1,7 @@
 # Blade Runner ID Card Generator
 
+![perplexed rick deckard](app/assets/brid-screenshot-59m26s.jpg)
+
 ## What is this
 
 A tool that lets you build your own ID card in the style of Rick Deckard's from _Blade Runner_. Built with HTML5 Canvas and TypeScript.
