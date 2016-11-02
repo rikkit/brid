@@ -22,7 +22,8 @@ module.exports = {
     sass: {
       options: {
         includePaths: [
-          'node_modules/bootstrap-sass/assets/stylesheets/'
+          'node_modules/bootstrap-sass/assets/stylesheets/',
+          'vendor/'
         ]
       }
     }

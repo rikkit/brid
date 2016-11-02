@@ -1,6 +1,6 @@
 /// <reference path="../../typings/index.d.ts" />
 import {DrawArea} from "./drawarea"
-import {Layer, OverlayLayer, MarqueeLayer, HeadlineLayer} from "./layer";
+import {Layer, OverlayLayer, MarqueeLayer, CrossLayer, HeadlineLayer} from "./layer";
 
 export class MixingDeck {
     private canvas :HTMLCanvasElement;
@@ -26,6 +26,9 @@ export class MixingDeck {
                 "headline",
                 "police 995"
             ),
+            new CrossLayer(
+                "x"
+            ),
             new MarqueeLayer(
                 "marquee",
                 "test"
@@ -38,7 +41,7 @@ export class MixingDeck {
 
         let cardOriginX :number, cardOriginY :number;
         let cardHeight :number, cardWidth :number;
-        let cardRatio = 1.3; // height/width
+        let cardRatio = 1.545; // standard UK business card ratio https://en.wikipedia.org/wiki/Business_card#Dimensions
         if (cardRatio >= 1) { // height is longest side; align horizontally
             cardHeight = this.canvas.height;
             cardWidth = cardHeight / cardRatio;
@@ -56,13 +59,13 @@ export class MixingDeck {
         let cardArea = new DrawArea(cardOriginX, cardOriginY, cardWidth, cardHeight);
 
         for (let layer of this.layers) {
-            layer.initialise(canvasArea, cardArea);
-
             let widget = layer.buildWidget();
             if (widget) {
                 this.widgetRoot.append(widget);
                 console.debug("Added widget for layer <%s>", layer.name);
             }
+
+            layer.initialise(canvasArea, cardArea);
         }
     }
 
@@ -74,6 +77,7 @@ export class MixingDeck {
 
     render() {
         this.context2d.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.context2d.globalCompositeOperation = "source-over";
 
         for (let layer of this.layers) {
             layer.render(this.context2d);

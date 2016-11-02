@@ -84,7 +84,7 @@ export class MarqueeLayer extends Layer {
     }
 
     buildWidget() :JQuery{
-        this.textArea = $($.parseHTML("<textarea></textarea>"));
+        this.textArea = $($.parseHTML('<input type="text"></input>'));
         this.textArea.val(this.text);
         
         return this.textArea;
@@ -173,9 +173,54 @@ export class HeadlineLayer extends Layer {
     }
 
     buildWidget() :JQuery {
-        this.textArea = $($.parseHTML("<textarea></textarea>"));
+        this.textArea = $($.parseHTML('<input type="text"></input>'));
         this.textArea.val(this.text);
 
         return this.textArea;
+    }
+}
+
+export class CrossLayer extends Layer {
+    private colourPicker :JQuery;
+    private colour :tinycolorInstance;
+
+    constructor (public name :string) {
+        super(name);
+    }
+
+    initialise(canvasArea :DrawArea, targetArea :DrawArea) {
+        this.canvasArea = canvasArea;
+        this.targetArea = targetArea;
+
+        this.colourPicker.spectrum({
+            color: "#F74700"
+        });
+    }
+
+    update() :void {
+        this.colour = this.colourPicker.spectrum('get');
+    }
+
+    render(canvas :CanvasRenderingContext2D) :DrawArea {
+        canvas.globalCompositeOperation = "darken";
+
+        let crossArea = this.targetArea; //TODO margin
+        canvas.beginPath();
+        canvas.moveTo(crossArea.originX, crossArea.originY);
+        canvas.lineTo(crossArea.limitX, crossArea.limitY);
+        canvas.moveTo(crossArea.limitX, crossArea.originY);
+        canvas.lineTo(crossArea.originX, crossArea.limitY);
+        canvas.strokeStyle = this.colour.toHexString();
+        canvas.lineWidth = 35;
+        canvas.stroke();
+
+        //this.targetArea.fillRect(canvas);
+
+        return this.targetArea;
+    }
+
+    buildWidget() :JQuery {
+        this.colourPicker = $($.parseHTML('<input type="text"></input>'));
+        return this.colourPicker;
     }
 }
