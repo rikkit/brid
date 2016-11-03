@@ -4,7 +4,8 @@ import {MixingDeck} from "./mixingdeck/mixingdeck"
 $(document).ready(function () {
     let deckRoot = $(".mixing-deck").first();
     let mixingDeck = new MixingDeck(deckRoot);
-    mixingDeck.initialise();
+    mixingDeck.addWidgets();
+    mixingDeck.initialise(); //TODO call this when page resizes
 
     const TARGET_FPS = 30;
     setInterval(function() {

@@ -204,7 +204,7 @@ export class CrossLayer extends Layer {
         canvas.moveTo(crossArea.limitX, crossArea.originY);
         canvas.lineTo(crossArea.originX, crossArea.limitY);
         canvas.strokeStyle = this.colour.toHexString();
-        canvas.lineWidth = 35;
+        canvas.lineWidth = targetArea.width / 4.5;
         canvas.stroke();
         
         return targetArea;

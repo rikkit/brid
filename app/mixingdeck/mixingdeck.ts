@@ -3,6 +3,7 @@ import {DrawArea, FlowDirection} from "./utils"
 import {Layer, StackLayer, OverlayLayer, MarqueeLayer, CrossLayer, HeadlineLayer, NameLayer} from "./layer";
 
 export class MixingDeck {
+    private canvasRoot :JQuery;
     private canvas :HTMLCanvasElement;
     private context2d :CanvasRenderingContext2D;
     private widgetRoot :JQuery;
@@ -10,7 +11,8 @@ export class MixingDeck {
     private cardArea :DrawArea;
 
     constructor(public root :JQuery) {
-        this.canvas = root.find(".card-canvas").first()[0] as HTMLCanvasElement;
+        this.canvasRoot = root.find(".card-canvas").first();
+        this.canvas = this.canvasRoot[0] as HTMLCanvasElement;
         this.context2d = this.canvas.getContext("2d");
         this.widgetRoot = root.find("form.card-widgets-root").first();
 
@@ -46,7 +48,25 @@ export class MixingDeck {
         ];
     }
 
-    initialise() {
+    addWidgets() {
+        for (let layer of this.layers) {
+            layer.addWidget(this.widgetRoot);
+        }
+    }
+
+    /// call this every time the page resizes
+    initialise() { 
+
+        // Handle flexible canvas size + HiDPI screens
+        let devicePixelRatio = window.devicePixelRatio || 1,
+            canvasWidth = this.canvasRoot.innerWidth(),
+            canvasHeight = this.canvasRoot.innerHeight();
+        this.canvas.width = canvasWidth * devicePixelRatio;
+        this.canvas.height = canvasHeight * devicePixelRatio;
+        this.canvas.style.width = canvasWidth + "px";
+        this.canvas.style.height = canvasHeight + "px";
+        this.context2d.scale(devicePixelRatio, devicePixelRatio);
+
         let canvasArea = new DrawArea(0, 0, this.canvas.width, this.canvas.height);
 
         let cardOriginX :number, cardOriginY :number;
@@ -69,7 +89,6 @@ export class MixingDeck {
         this.cardArea = new DrawArea(cardOriginX, cardOriginY, cardWidth, cardHeight);
 
         for (let layer of this.layers) {
-            layer.addWidget(this.widgetRoot);
             layer.initialise(canvasArea);
         }
     }
