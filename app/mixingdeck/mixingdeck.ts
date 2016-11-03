@@ -1,6 +1,6 @@
 /// <reference path="../../typings/index.d.ts" />
-import {DrawArea, FlowDirection} from "./utils"
-import {Layer, StackLayer, OverlayLayer, MarqueeLayer, CrossLayer, HeadlineLayer, NameLayer} from "./layer";
+import {DrawArea, FlowDirection, GridRenderBehaviour} from "./utils"
+import {Layer, StackLayer, FillLayer, MarqueeLayer, CrossLayer, HeadlineLayer, CentredTextLayer, GridLayer} from "./layer";
 
 export class MixingDeck {
     private canvasRoot :JQuery;
@@ -21,31 +21,19 @@ export class MixingDeck {
         }
         
         this.layers = [
-            new OverlayLayer(
-                "background",
-                "#222"
-            ),
-            new StackLayer(
-                "stack",
-                FlowDirection.TopDown,
-                [
-                    new HeadlineLayer(
-                        "headline",
-                        "police 995"
-                    ),
-                    new NameLayer(
-                        "name"
-                    )
-                ]
-            ),
-            new CrossLayer(
-                "x"
-            ),
-            new MarqueeLayer(
-                "marquee",
-                "test"
-            ),
-        ];
+            new GridLayer("root", GridRenderBehaviour.Expand, [
+                new FillLayer("background", "#222"),
+                new StackLayer("stack", FlowDirection.TopDown, [
+                    new HeadlineLayer("headline", "POLICE 995"),
+                    new GridLayer("name", GridRenderBehaviour.Expand, [
+                        new FillLayer("nameBackground", "#fff"),
+                        new CentredTextLayer("nameText", "R DECKARD   XV")
+                    ])
+                ]),
+                new CrossLayer("cross", "#F74700")
+            ]),
+            new MarqueeLayer("marquee", "test")
+        ]
     }
 
     addWidgets() {

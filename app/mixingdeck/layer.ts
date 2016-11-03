@@ -1,5 +1,5 @@
 /// <reference path="../../typings/index.d.ts" />
-import {DrawArea, FlowDirection} from "./utils";
+import {DrawArea, FlowDirection, GridRenderBehaviour} from "./utils";
 
 export abstract class Layer {
     protected canvasArea :DrawArea;
@@ -12,12 +12,13 @@ export abstract class Layer {
     }
 
     abstract update() :void;
-    abstract render(canvas :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea;
+    abstract measure(context :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea; // return null means will fill all space provided to it
+    abstract render(context :CanvasRenderingContext2D, targetArea :DrawArea) :void;
     abstract addWidget(widgetRoot :JQuery) :void;
 }
 
 // Fill the whole canvas area with the given style
-export class OverlayLayer extends Layer {
+export class FillLayer extends Layer {
     
     constructor (public name :string, public fillStyle :string){
         super(name);
@@ -27,11 +28,13 @@ export class OverlayLayer extends Layer {
 
     }
 
-    render(context :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea{
+    measure(canvas :CanvasRenderingContext2D, targetArea :DrawArea) {
+        return null;
+    }
+
+    render(context :CanvasRenderingContext2D, targetArea :DrawArea) :void {
         context.fillStyle = this.fillStyle;
         targetArea.fillRect(context);
-
-        return targetArea;
     }
 
     addWidget(widgetRoot :JQuery) :void {
@@ -62,17 +65,19 @@ export class MarqueeLayer extends Layer {
         }
     }
 
-    render(context :CanvasRenderingContext2D) :DrawArea {
-        context.font = "20px spinner";
-        context.fillStyle = "#111";
-        context.fillText(this.text, this.x, 20);
-
+    measure(context :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {
         return new DrawArea(
             this.canvasArea.originX,
             this.canvasArea.originY,
             this.canvasArea.width,
             20
         );
+    }
+
+    render(context :CanvasRenderingContext2D) :void {
+        context.font = "20px spinner";
+        context.fillStyle = "#111";
+        context.fillText(this.text, this.x, 20);
     }
 
     addWidget(widgetRoot :JQuery) :void {
@@ -127,16 +132,20 @@ export class HeadlineLayer extends Layer {
             text.substr(0, midpointIndexPair[0]),
             text.substr(midpointIndexPair[1], text.length - 1)
         ];
-    } 
+    }
 
-    render(context :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {
+    private measureResult;
+
+    measure(context :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {
         let lines = this.bisectString(this.text);
         if (lines.length == 0) {
-            return;
+            return DrawArea.None();
         }
 
-        console.debug("headline layer: split %s into %s", this.text, lines)
-        
+        this.measureResult = {
+            lines: []
+        }
+
         const baselineFontHeight = 20;
         var currentVerticalOffset :number = targetArea.originY;
         for (let line of lines) {            
@@ -150,10 +159,12 @@ export class HeadlineLayer extends Layer {
 
             let scaleFactor = targetArea.width / lineWidth;
             let fontHeight = baselineFontHeight * scaleFactor;
-
-            context.font = fontHeight + "px spinner";
-            context.fillStyle = "#eee";
-            context.fillText(line, targetArea.originX, currentVerticalOffset + fontHeight, targetArea.width);
+            
+            this.measureResult.lines.push({
+                line: line,
+                fontHeight: fontHeight,
+                verticalOffset: currentVerticalOffset
+            });
             currentVerticalOffset += fontHeight;
         }
 
@@ -164,6 +175,14 @@ export class HeadlineLayer extends Layer {
             targetArea.originY,
             targetArea.width,
             currentVerticalOffset);
+    }
+
+    render(context :CanvasRenderingContext2D, targetArea :DrawArea) :void {
+        for(let measuredLine of this.measureResult.lines) {
+            context.font = measuredLine.fontHeight + "px spinner";
+            context.fillStyle = "#eee";
+            context.fillText(measuredLine.line, targetArea.originX, measuredLine.verticalOffset + measuredLine.fontHeight, targetArea.width);
+        }
     }
 
     addWidget(widgetRoot :JQuery) :void {
@@ -178,7 +197,7 @@ export class CrossLayer extends Layer {
     private colourPicker :JQuery;
     private colour :tinycolorInstance;
 
-    constructor (public name :string) {
+    constructor (public name :string, public startColour :string) {
         super(name);
     }
 
@@ -186,7 +205,7 @@ export class CrossLayer extends Layer {
         super.initialise(canvasArea);
 
         this.colourPicker.spectrum({
-            color: "#F74700"
+            color: this.startColour
         });
     }
 
@@ -194,7 +213,11 @@ export class CrossLayer extends Layer {
         this.colour = this.colourPicker.spectrum('get');
     }
 
-    render(canvas :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {
+    measure(context :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {        
+        return targetArea;
+    }
+
+    render(canvas :CanvasRenderingContext2D, targetArea :DrawArea) :void {
         canvas.globalCompositeOperation = "darken";
 
         let crossArea = targetArea; //TODO margin
@@ -206,8 +229,6 @@ export class CrossLayer extends Layer {
         canvas.strokeStyle = this.colour.toHexString();
         canvas.lineWidth = targetArea.width / 4.5;
         canvas.stroke();
-        
-        return targetArea;
     }
 
     addWidget(widgetRoot :JQuery) :void {
@@ -217,8 +238,8 @@ export class CrossLayer extends Layer {
     }
 }
 
-export class StackLayer extends Layer {    
-    constructor (public name :string, public orientation :FlowDirection, public children :Layer[]) {
+abstract class ContainerLayer extends Layer {
+    constructor(public name :string, protected children :Layer[]){
         super(name);
     }
 
@@ -230,10 +251,98 @@ export class StackLayer extends Layer {
         }
     }
 
+    measure(context :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {        
+        return targetArea;
+    }
+
+    addWidget(widgetRoot :JQuery) :void {
+        for (let childLayer of this.children) {
+            childLayer.addWidget(widgetRoot);
+        }
+    }
+
     update() :void {
         for (let childLayer of this.children) {
             childLayer.update();
         }
+    }
+}
+
+// renders its children on top of each other
+export class GridLayer extends ContainerLayer {
+    private largestMeasure :DrawArea;
+
+    constructor (name :string, public renderBehavior :GridRenderBehaviour, children :Layer[]) {
+        super(name, children);
+    }
+
+    measure(context :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {        
+        let childMeasurements :DrawArea[] = [];
+        for (let childLayer of this.children) {
+            let measurement = childLayer.measure(context, targetArea);
+            if (measurement) {
+                childMeasurements.push(measurement);
+            }
+        }
+
+        // only return after childLayer.measure has been called for each layer, even if we know it's pointless
+        if (this.renderBehavior == GridRenderBehaviour.Expand) {
+            return targetArea;
+        }
+
+        if (childMeasurements.length == 0) {
+            return DrawArea.None();
+        }
+        
+        let smallestX :number, smallestY :number, largestX :number, largestY :number;
+        for (let measurement of childMeasurements) {
+            if (measurement.originX < smallestX) smallestX = measurement.originX;
+            if (measurement.originY < smallestY) smallestY = measurement.originY;
+            if (measurement.limitX > largestX) largestX = measurement.limitX;
+            if (measurement.limitY > largestY) largestY = measurement.limitY;
+        }
+
+        this.largestMeasure = new DrawArea(smallestX, smallestY, largestX - smallestX, largestY - smallestY);
+        return this.largestMeasure;
+    }
+
+    render(canvas :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {
+        canvas.globalCompositeOperation = "source-over";
+
+        let childTargetArea = this.renderBehavior == GridRenderBehaviour.Compress
+            ? this.largestMeasure
+            : targetArea;
+
+        for (let layer of this.children) {
+            layer.render(canvas, childTargetArea);
+        }
+
+        return targetArea;
+    }
+}
+
+// stacks its children horizontally or vertically
+export class StackLayer extends ContainerLayer {    
+    constructor (name :string, public orientation :FlowDirection, children :Layer[]) {
+        super(name, children);
+    }
+
+    render(canvas :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {
+        canvas.globalCompositeOperation = "source-over";
+
+        let renderedArea :DrawArea = null;
+        let newTargetArea = targetArea;
+        for (let layer of this.children) {
+            renderedArea = layer.measure(canvas, newTargetArea);
+            layer.render(canvas, newTargetArea);
+            if (!renderedArea) {
+                continue;
+            }
+
+            newTargetArea = this.fitDrawArea(newTargetArea, renderedArea);
+        }
+
+        return targetArea;
     }
 
     private fitDrawArea(whole :DrawArea, subtract :DrawArea) :DrawArea {
@@ -257,41 +366,19 @@ export class StackLayer extends Layer {
             throw new Error("Unknown flow direction");
         }
     }
-
-    render(canvas :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {
-        canvas.globalCompositeOperation = "source-over";
-
-        let renderedArea :DrawArea = null;
-        let newTargetArea = targetArea;
-        for (let layer of this.children) {
-            renderedArea = layer.render(canvas, newTargetArea);
-            if (!renderedArea) {
-                continue;
-            }
-
-            newTargetArea = this.fitDrawArea(newTargetArea, renderedArea);
-        }
-
-        return targetArea;
-    }
-
-    addWidget(widgetRoot :JQuery) :void {
-        for (let childLayer of this.children) {
-            childLayer.addWidget(widgetRoot);
-        }
-    }
 }
 
-export class NameLayer extends Layer {
+export class CentredTextLayer extends Layer {
     private textArea :JQuery;
+    private measureResult;
 
-    constructor(name :string) {
+    constructor(name :string, public text :string) {
         super(name)
     }
 
     addWidget(root :JQuery) :void {
         this.textArea = $($.parseHTML('<input type="text"></input>'));
-        this.textArea.val("R. DECKARD   XV");
+        this.textArea.val(this.text);
 
         root.append(this.textArea);
     }
@@ -299,20 +386,24 @@ export class NameLayer extends Layer {
     update() :void {
     }
 
-    render(context :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {
+    measure(context :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {     
         let fontHeight = targetArea.width / 11;
         let margin = fontHeight / 4;
         
-        let backgroundArea = new DrawArea(targetArea.originX, targetArea.originY, targetArea.width, fontHeight + (2 * margin));
-        backgroundArea.fillRect(context);
+        this.measureResult = {
+            fontHeight: fontHeight,
+            margin: margin
+        };
+        
+        return new DrawArea(targetArea.originX, targetArea.originY, targetArea.width, fontHeight + (2 * margin));
+    }
 
-        context.font = fontHeight + 'px "Roboto Slab"';
-        let name = this.textArea.val();
-        let nameMargin = (targetArea.width - context.measureText(name).width) / 2;
+    render(context :CanvasRenderingContext2D, targetArea :DrawArea) :void {
+        context.font = this.measureResult.fontHeight + 'px "Roboto Slab"';
+        this.text = this.textArea.val();
+        let nameMargin = (targetArea.width - context.measureText(this.text).width) / 2;
 
         context.fillStyle = "#111";
-        context.fillText(name, targetArea.originX + nameMargin, targetArea.originY + fontHeight + margin);
-
-        return backgroundArea;
+        context.fillText(this.text, targetArea.originX + nameMargin, targetArea.originY + this.measureResult.fontHeight + this.measureResult.margin);
     }
 }

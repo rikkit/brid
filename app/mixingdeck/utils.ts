@@ -15,6 +15,10 @@ export class DrawArea {
     fillRect(context :CanvasRenderingContext2D) {
         context.fillRect(this.originX, this.originY, this.width, this.height);
     }
+
+    static None() :DrawArea {
+        return new DrawArea(0, 0, 0 ,0);
+    }
 }
 
 export enum FlowDirection {
@@ -22,4 +26,9 @@ export enum FlowDirection {
     LeftRight,
     //BottomUp,
     //RightLeft
+}
+
+export enum GridRenderBehaviour {
+    Compress,
+    Expand
 }
