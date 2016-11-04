@@ -9,6 +9,10 @@ $(document).ready(function () {
     let resizeTimer;
     const resizeTimeoutMs = 100;
     function onViewportResize() {
+        // width is handled with CSS, top margin provided by header
+        let deckHeight = document.documentElement.clientHeight - (2 * deckRoot.offset().top);
+        deckRoot.height(deckHeight); 
+
         mixingDeck.initialise();
     }
 
