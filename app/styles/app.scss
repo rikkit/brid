@@ -22,8 +22,9 @@ h1 {
     flex-wrap: nowrap;
     background-color: #ccc;
 
-    .card-canvas {
+    .card-canvas-container {
         flex-grow: 2;
+        overflow: hidden;
     }
 
     .card-widgets {

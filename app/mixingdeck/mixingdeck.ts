@@ -11,13 +11,25 @@ export class MixingDeck {
     private cardArea :DrawArea;
 
     constructor(public root :JQuery) {
-        this.canvasRoot = root.find(".card-canvas").first();
-        this.canvas = this.canvasRoot[0] as HTMLCanvasElement;
+        this.canvasRoot = root.find(".card-canvas-container").first();
+        if (!this.canvasRoot || this.canvasRoot.length == 0) {
+            console.warn("Couldn't find canvas container");
+            return;
+        }
+
+        this.canvas = this.canvasRoot.find(".card-canvas")[0] as HTMLCanvasElement;
+        if (!this.canvas) {
+            console.warn("Couldn't find canvas");
+            return;
+        }
+
         this.context2d = this.canvas.getContext("2d");
+
         this.widgetRoot = root.find("form.card-widgets-root").first();
 
         if (this.widgetRoot.length == 0) {
             console.warn("Couldn't find root element for widgets");
+            return;
         }
         
         this.layers = [

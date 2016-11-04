@@ -110,7 +110,7 @@ export class HeadlineLayer extends Layer {
         var match;
         while ((match = regex.exec(text)) != null) {
             let pair = [match.index, match.index+match[0].length];
-            console.debug("headline layer bisect: whitespace at %s", pair);
+            //console.debug("headline layer bisect: whitespace at %s", pair);
             indexes.push(pair);
         }
 
