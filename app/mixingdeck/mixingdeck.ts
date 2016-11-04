@@ -87,8 +87,14 @@ export class MixingDeck {
             cardOriginY = (this.canvas.height - cardHeight) / 2;
         }
 
+        const marginPercentage = 0.05;
+        let cardMargin = this.canvas.height * marginPercentage;
         // TODO change this area depending on configured card size, if responsive then just use whole canvas
-        this.cardArea = new DrawArea(cardOriginX, cardOriginY, cardWidth, cardHeight);
+        this.cardArea = new DrawArea(
+            cardOriginX + cardMargin,
+            cardOriginY + cardMargin,
+            cardWidth - (2 * cardMargin),
+            cardHeight - ( 2 * cardMargin));
 
         for (let layer of this.layers) {
             layer.initialise(canvasArea);
