@@ -9,6 +9,7 @@ export class MixingDeck {
     private widgetRoot :JQuery;
     private layers :Layer[];
     private cardArea :DrawArea;
+    private initialised :boolean;
 
     constructor(public root :JQuery) {
         this.canvasRoot = root.find(".card-canvas-container").first();
@@ -55,7 +56,8 @@ export class MixingDeck {
     }
 
     /// call this every time the page resizes
-    initialise() { 
+    initialise() {
+        this.initialised = false; // pause rendering while initialising
 
         // Handle flexible canvas size + HiDPI screens
         let devicePixelRatio = window.devicePixelRatio || 1,
@@ -91,15 +93,25 @@ export class MixingDeck {
         for (let layer of this.layers) {
             layer.initialise(canvasArea);
         }
+
+        this.initialised = true;
     }
 
     update() {
+        if (!this.initialised) {
+            return;
+        }
+
         for (let layer of this.layers) {
             layer.update();
         }
     }
 
     render() {
+        if (!this.initialised) {
+            return;
+        }
+        
         this.context2d.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.context2d.globalCompositeOperation = "source-over";
 
