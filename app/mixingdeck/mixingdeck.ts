@@ -67,7 +67,7 @@ export class MixingDeck {
         this.canvas.height = canvasHeight * devicePixelRatio;
         this.canvas.style.width = canvasWidth + "px";
         this.canvas.style.height = canvasHeight + "px";
-        this.context2d.scale(devicePixelRatio, devicePixelRatio);
+        //this.context2d.scale(devicePixelRatio, devicePixelRatio);
 
         let canvasArea = new DrawArea(0, 0, this.canvas.width, this.canvas.height);
 
