@@ -296,10 +296,10 @@ export class GridLayer extends ContainerLayer {
         
         let smallestX :number, smallestY :number, largestX :number, largestY :number;
         for (let measurement of childMeasurements) {
-            if (measurement.originX < smallestX) smallestX = measurement.originX;
-            if (measurement.originY < smallestY) smallestY = measurement.originY;
-            if (measurement.limitX > largestX) largestX = measurement.limitX;
-            if (measurement.limitY > largestY) largestY = measurement.limitY;
+            if (!smallestX || measurement.originX < smallestX) smallestX = measurement.originX;
+            if (!smallestY || measurement.originY < smallestY) smallestY = measurement.originY;
+            if (!largestX || measurement.limitX > largestX) largestX = measurement.limitX;
+            if (!largestY || measurement.limitY > largestY) largestY = measurement.limitY;
         }
 
         this.largestMeasure = new DrawArea(smallestX, smallestY, largestX - smallestX, largestY - smallestY);

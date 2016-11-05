@@ -38,9 +38,9 @@ export class MixingDeck {
                 new FillLayer("background", "#222"),
                 new StackLayer("stack", FlowDirection.TopDown, [
                     new HeadlineLayer("headline", "POLICE 995"),
-                    new GridLayer("name", GridRenderBehaviour.Expand, [
+                    new GridLayer("name", GridRenderBehaviour.Compress, [
                         new FillLayer("nameBackground", "#fff"),
-                        new CentredTextLayer("nameText", "R DECKARD   XV")
+                        new CentredTextLayer("nameText", "R. DECKARD   XV")
                     ])
                 ]),
                 new CrossLayer("cross", "#F74700")
