@@ -16,6 +16,8 @@ $(document).ready(function () {
         mixingDeck.initialise();
     }
 
+    onViewportResize();
+
     const TARGET_FPS = 30;
     setInterval(function() {
         mixingDeck.update();
