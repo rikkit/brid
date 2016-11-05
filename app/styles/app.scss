@@ -1,6 +1,11 @@
 @font-face {
     font-family: "spinner";
-    src: url(./spinner.ttf) format("truetype");
+    src: url('./spinner.ttf') format("truetype");
+}
+
+@font-face {
+    font-family: "Cutive-Regular";
+    src: url('./Cutive-Regular.ttf') format("truetype");
 }
 
 body {

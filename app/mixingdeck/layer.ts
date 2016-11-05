@@ -387,7 +387,7 @@ export class CentredTextLayer extends Layer {
     }
 
     measure(context :CanvasRenderingContext2D, targetArea :DrawArea) :DrawArea {     
-        let fontHeight = targetArea.width / 11;
+        let fontHeight = targetArea.width / 15;
         let margin = fontHeight / 4;
         
         this.measureResult = {
@@ -399,7 +399,7 @@ export class CentredTextLayer extends Layer {
     }
 
     render(context :CanvasRenderingContext2D, targetArea :DrawArea) :void {
-        context.font = this.measureResult.fontHeight + 'px "Roboto Slab"';
+        context.font = this.measureResult.fontHeight + 'px "Cutive-Regular"';
         this.text = this.textArea.val();
         let nameMargin = (targetArea.width - context.measureText(this.text).width) / 2;
 
